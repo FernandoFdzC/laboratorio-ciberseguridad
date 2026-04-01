@@ -13,7 +13,7 @@ else
     bash wazuh-install.sh --all-in-one
 
     # Extraer contraseñas de acceso al dashboard
-    tar -O -f wazuh-install-files.tar wazuh-install-files/wazuh-passwords.txt > /home/vagrant/wazuh-passwords.txt
+    tar -xOf wazuh-install-files.tar wazuh-install-files/wazuh-passwords.txt > /home/vagrant/wazuh-passwords.txt
 
     echo "======================================================="
     echo "Instalación de Wazuh completada."
