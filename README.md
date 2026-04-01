@@ -6,8 +6,8 @@ Este laboratorio despliega tres máquinas virtuales en una red host-only (192.16
 - **Vulnerable (Ubuntu con agente Wazuh y Suricata)** : IP 192.168.30.30
 
 ## Requisitos previos
-- VirtualBox (última versión)
-- Vagrant (última versión)
+- VirtualBox (última versión) https://www.virtualbox.org/wiki/Downloads
+- Vagrant (última versión) https://developer.hashicorp.com/vagrant/install#windows
 - Al menos 8 GB de RAM libre (recomendado)
 
 ## Instalación
