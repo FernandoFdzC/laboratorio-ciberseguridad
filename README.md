@@ -11,13 +11,25 @@ Este laboratorio despliega tres máquinas virtuales en una red host-only (192.16
 - Al menos 8 GB de RAM libre (recomendado)
 
 ## Instalación
-1. Clona este repositorio o descarga los archivos.
+1. Abre PowerShell (o Git Bash) y clona el repositorio, o bien descarga todos los archivos:
+   ```bash
+   git clone https://github.com/tu-usuario/laboratorio-ciberseguridad.git
 2. Abre una terminal en la carpeta `lab-ciberseguridad`.
-3. Ejecuta `vagrant up`. La primera vez tardará varios minutos (descarga de boxes, instalación de software).
-4. Una vez completado, accede a las máquinas:
+   ```bash
+   cd laboratorio-ciberseguridad
+3. Crea la base de los laboratorios. La primera vez tardará varios minutos.
+   ```bash
+   cd base
+   vagrant up
+4. Crea la maquina vulnerable que deseas practicar:
+   ```bash
+   cd escenarios/Maquina-que-quieras
+   vagrant up
+5. Una vez completado, accede a las máquinas:
    - Atacante: `vagrant ssh attacker`
    - Wazuh: `vagrant ssh wazuh`
    - Vulnerable: `vagrant ssh vulnerable`
+   - O bien accede a ellas desde la interfaz de VirtualBox.
 
 ## Acceso al dashboard de Wazuh
 - Abre tu navegador y visita `https://192.168.30.20`
