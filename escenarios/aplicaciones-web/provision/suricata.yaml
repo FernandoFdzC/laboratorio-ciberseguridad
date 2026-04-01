@@ -1,0 +1,31 @@
+%YAML 1.1
+---
+vars:
+  address-groups:
+    HOME_NET: "[192.168.30.0/24]"
+    EXTERNAL_NET: "!$HOME_NET"
+  # Filtro por IP del atacante (reemplazado por script)
+  capture-filter: "ip host ATTACKER_IP_PLACEHOLDER"
+
+af-packet:
+  - interface: eth1   # Se reemplazará dinámicamente
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    tpacket-v3: yes
+
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert
+        - http
+        - dns
+        - tls
+        - files
+        - smtp
+        - ssh
+        - flow

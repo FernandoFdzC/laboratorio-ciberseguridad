@@ -1,0 +1,33 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box_check_update = false
+
+  # Máquina atacante (Kali Linux, con interfaz grafica propia, el escritorio)
+  config.vm.define "attacker" do |attacker|
+    attacker.vm.box = "kalilinux/rolling"
+    attacker.vm.network "private_network", ip: "192.168.30.10"
+    attacker.vm.hostname = "attacker"
+    attacker.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus = 2
+      vb.gui = true
+    end
+    #Es un fichero vacio, pero permite configurar la instalacion de herramientas futuras en kali si fueran necesarias para el laboratorio.
+    attacker.vm.provision "shell", path: "provision/attacker.sh", privileged: true
+  end
+
+  # Máquina Wazuh (all-in-one: indexer, server, dashboard)
+  config.vm.define "wazuh" do |wazuh|
+    wazuh.vm.box = "ubuntu/jammy64"
+    wazuh.vm.network "private_network", ip: "192.168.30.20"
+    wazuh.vm.hostname = "wazuh"
+    wazuh.vm.provider "virtualbox" do |vb|
+      vb.memory = 4096
+      vb.cpus = 4
+    end
+    # El script de instalación de Wazuh incluye comprobación de idempotencia
+    wazuh.vm.provision "shell", path: "provision/wazuh.sh", privileged: true
+  end
+end
