@@ -23,17 +23,22 @@ else
     echo "======================================================="
 fi
 
-# Bloquear acceso desde la máquina atacante, simulación de un entorno real.
+# Bloquear acceso desde la máquina atacante (IP fija)
 ATTACKER_IP="192.168.30.10"
+
+# Instalar iptables-persistent de forma no interactiva
+if ! dpkg -l | grep -q iptables-persistent; then
+    # Preconfigurar para que guarde las reglas actuales 
+    echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
+    echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
+    DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent
+fi
 
 # Verificar si la regla ya existe para no duplicar
 if ! iptables -C INPUT -s $ATTACKER_IP -j DROP 2>/dev/null; then
     echo "Añadiendo regla de bloqueo para atacante en iptables..."
     iptables -A INPUT -s $ATTACKER_IP -j DROP
     iptables -A FORWARD -s $ATTACKER_IP -j DROP
-
-    # Persistir reglas en reinicios
-    apt-get install -y iptables-persistent
     netfilter-persistent save
     echo "Regla persistente añadida."
 else
