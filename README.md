@@ -26,10 +26,9 @@ Este laboratorio despliega tres máquinas virtuales en una red host-only (192.16
    cd escenarios/Maquina-que-quieras
    vagrant up
 5. Una vez completado, accede a las máquinas:
-   - Atacante: `vagrant ssh attacker`
+   - Atacante: `vagrant ssh attacker` o bien puedes acceder a su escritorio desde VirtualBox (recomendado). 
    - Wazuh: `vagrant ssh wazuh`
    - Vulnerable: `vagrant ssh vulnerable`
-   - O bien accede a ellas desde la interfaz de VirtualBox.
 
 ## Acceso al dashboard de Wazuh
 - Abre tu navegador y visita `https://192.168.30.20`
