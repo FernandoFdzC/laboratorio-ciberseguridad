@@ -34,12 +34,25 @@ chown vagrant:vagrant /home/vagrant/docker-compose.yml
 cd /home/vagrant
 docker-compose up -d
 
-# 4. Instalar agente Wazuh (solo si no está)
+# 4. Instalar agente Wazuh (usando repositorio APT - Método Oficial)
 if ! systemctl is-active --quiet wazuh-agent; then
-    echo "Instalando agente Wazuh..."
-    curl -s https://packages.wazuh.com/4.x/wazuh-install.sh | bash -s -- -a
+    echo "Instalando agente Wazuh desde repositorio APT..."
+    # Instalar dependencias necesarias
+    apt-get install -y gnupg apt-transport-https curl
+    # 1. Importar la clave GPG de Wazuh
+    curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | gpg --no-default-keyring --keyring gnupg-ring:/usr/share/keyrings/wazuh.gpg --import
+    chmod 644 /usr/share/keyrings/wazuh.gpg
+    # 2. Añadir el repositorio de Wazuh
+    echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list
+    # 3. Actualizar la lista de paquetes e instalar el agente
+    apt-get update
+    apt-get install -y wazuh-agent
+    # 4. Configurar la IP del Wazuh manager
     sed -i "s/^MANAGER_IP=.*/MANAGER_IP=$WAZUH_MANAGER_IP/" /var/ossec/etc/ossec.conf
-    systemctl restart wazuh-agent
+    # 5. Habilitar e iniciar el agente
+    systemctl daemon-reload
+    systemctl enable wazuh-agent
+    systemctl start wazuh-agent
 else
     echo "Agente Wazuh ya instalado. Asegurando configuración..."
     sed -i "s/^MANAGER_IP=.*/MANAGER_IP=$WAZUH_MANAGER_IP/" /var/ossec/etc/ossec.conf
