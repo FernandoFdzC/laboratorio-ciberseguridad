@@ -62,6 +62,7 @@ fi
 # 5. Instalar Suricata (idempotente)
 if ! command -v suricata &> /dev/null; then
     echo "Instalando Suricata..."
+    apt-get install -y software-properties-common
     add-apt-repository ppa:oisf/suricata-stable -y
     apt-get update -y
     apt-get install -y suricata
@@ -76,16 +77,20 @@ if [ -z "$INTERFACE" ]; then
 fi
 echo "Interfaz a monitorizar: $INTERFACE"
 
+# Copiar la configuración personalizada y ajustar parámetros
 cp /vagrant/provision/suricata.yaml /etc/suricata/suricata.yaml
 sed -i "s/^  - interface: .*/  - interface: $INTERFACE/" /etc/suricata/suricata.yaml
 sed -i "s/ATTACKER_IP_PLACEHOLDER/$ATTACKER_IP/" /etc/suricata/suricata.yaml
 
-# 7. Actualizar reglas (siempre)
-suricata-update
+# 7. Actualizar reglas (siempre). Si falla, mostramos advertencia pero continuamos
+echo "Actualizando reglas de Suricata..."
+if ! suricata-update; then
+    echo "Advertencia: suricata-update encontró errores, pero se intentará iniciar Suricata igualmente."
+fi
 
 # 8. Asegurar que Suricata está corriendo
 systemctl enable suricata
-systemctl restart suricata
+systemctl restart suricata || echo "Error al iniciar Suricata, revisa los logs."
 
 # 9. Configurar agente Wazuh para leer logs de Suricata (solo si no existe)
 if ! grep -q "eve.json" /var/ossec/etc/ossec.conf; then
