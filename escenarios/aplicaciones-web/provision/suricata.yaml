@@ -1,20 +1,55 @@
 %YAML 1.1
 ---
+
+# Configuración de Suricata con las interfaces de red y los puertos 
 vars:
   address-groups:
     HOME_NET: "[192.168.30.0/24]"
     EXTERNAL_NET: "!$HOME_NET"
-  # Filtro por IP del atacante (reemplazado por script)
+    HTTP_SERVERS: "$HOME_NET"
+    SMTP_SERVERS: "$HOME_NET"
+    SQL_SERVERS: "$HOME_NET"
+    DNS_SERVERS: "$HOME_NET"
+    TELNET_SERVERS: "$HOME_NET"
+    AIM_SERVERS: "$HOME_NET"
+    DC_SERVERS: "$HOME_NET"
+    DNP3_SERVER: "$HOME_NET"
+    DNP3_CLIENT: "$HOME_NET"
+    MODBUS_CLIENT: "$HOME_NET"
+    MODBUS_SERVER: "$HOME_NET"
+    ENIP_CLIENT: "$HOME_NET"
+    ENIP_SERVER: "$HOME_NET"
+  port-groups:
+    HTTP_PORTS: "80"
+    SHELLCODE_PORTS: "!80"
+    ORACLE_PORTS: 1521
+    SSH_PORTS: 22
+    DNP3_PORTS: 20000
+    MODBUS_PORTS: 502
+
+  # Filtro por IP del atacante 
   capture-filter: "ip host ATTACKER_IP_PLACEHOLDER"
 
+# Configuración de la interfaz de red
 af-packet:
-  - interface: eth1   # Se reemplazará dinámicamente
+  - interface: eth1   # Se ajustará automáticamente por el script de configuracion de la maquina vulnerable
     cluster-id: 99
     cluster-type: cluster_flow
     defrag: yes
     use-mmap: yes
     tpacket-v3: yes
 
+# Deshabilito protocolos industriales no necesarios para evitar errores, ya que no se usaran en nuestros laboratorios
+app-layer:
+  protocols:
+    dnp3:
+      enabled: no
+      detection-enabled: no
+    modbus:
+      enabled: no
+      detection-enabled: no
+
+# Configuración de logs, integracion para wazuh
 outputs:
   - eve-log:
       enabled: yes
