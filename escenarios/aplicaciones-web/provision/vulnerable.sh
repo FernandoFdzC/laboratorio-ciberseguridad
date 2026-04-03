@@ -96,15 +96,30 @@ sed -i "s/ATTACKER_IP_PLACEHOLDER/$ATTACKER_IP/" /etc/suricata/suricata.yaml
 systemctl enable suricata
 systemctl restart suricata || echo "Error al iniciar Suricata, revisa los logs."
 
-# 9. Configurar agente Wazuh para leer logs de Suricata (solo si no existe)
+# 9. Configurar agente Wazuh para leer logs de Suricata 
 if ! grep -q "eve.json" /var/ossec/etc/ossec.conf; then
     echo "Configurando agente Wazuh para leer logs de Suricata..."
-    sed -i '/<localfile>/a\
+
+    # Hacer una copia de seguridad del archivo original
+    cp /var/ossec/etc/ossec.conf /var/ossec/etc/ossec.conf.bak
+
+    # Insertar el bloque <localfile> antes de </ossec_config> 
+    sed -i '/<\/ossec_config>/i\
   <localfile>\
     <log_format>json</log_format>\
     <location>/var/log/suricata/eve.json</location>\
   </localfile>' /var/ossec/etc/ossec.conf
-    systemctl restart wazuh-agent
+
+    # Validar la configuración del agente antes de reiniciar
+    if /var/ossec/bin/ossec-control config-test; then
+        systemctl restart wazuh-agent
+        echo "Agente Wazuh reiniciado correctamente con la nueva configuración."
+    else
+        echo "ERROR: La configuración de Wazuh no es válida. Restaurando copia de seguridad..."
+        mv /var/ossec/etc/ossec.conf.bak /var/ossec/etc/ossec.conf
+        systemctl restart wazuh-agent
+        echo "Configuración restaurada. El agente no leerá los logs de Suricata."
+    fi
 else
     echo "Log de Suricata ya configurado en Wazuh."
 fi
