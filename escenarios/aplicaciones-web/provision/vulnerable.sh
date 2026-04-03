@@ -4,14 +4,14 @@ set -e
 WAZUH_MANAGER_IP=${WAZUH_MANAGER_IP:-"192.168.30.20"}
 ATTACKER_IP=${ATTACKER_IP:-"192.168.30.10"}
 
-echo "=== Configurando máquina vulnerable (idempotente) ==="
+echo "=== Configurando máquina vulnerable ==="
 echo "Wazuh manager: $WAZUH_MANAGER_IP"
 echo "Atacante: $ATTACKER_IP"
 
 # 1. Actualizar sistema solo si es necesario
 apt-get update -y
 
-# 2. Instalar Docker y Docker Compose (idempotente)
+# 2. Instalar Docker y Docker Compose 
 if ! command -v docker &> /dev/null; then
     echo "Instalando Docker..."
     apt-get install -y docker.io
@@ -28,7 +28,7 @@ else
     echo "Docker Compose ya instalado."
 fi
 
-# 3. Levantar contenedores (idempotente)
+# 3. Levantar contenedores 
 cp /vagrant/docker-compose.yml /home/vagrant/
 chown vagrant:vagrant /home/vagrant/docker-compose.yml
 cd /home/vagrant
@@ -59,7 +59,7 @@ else
     systemctl restart wazuh-agent
 fi
 
-# 5. Instalar Suricata (idempotente)
+# 5. Instalar Suricata 
 if ! command -v suricata &> /dev/null; then
     echo "Instalando Suricata..."
     apt-get install -y software-properties-common
@@ -82,11 +82,15 @@ cp /vagrant/provision/suricata.yaml /etc/suricata/suricata.yaml
 sed -i "s/^  - interface: .*/  - interface: $INTERFACE/" /etc/suricata/suricata.yaml
 sed -i "s/ATTACKER_IP_PLACEHOLDER/$ATTACKER_IP/" /etc/suricata/suricata.yaml
 
-# 7. Actualizar reglas (siempre). Si falla, mostramos advertencia pero continuamos
-echo "Actualizando reglas de Suricata..."
-if ! suricata-update; then
-    echo "Advertencia: suricata-update encontró errores, pero se intentará iniciar Suricata igualmente."
-fi
+# 7. (Opcional) Añadir una regla personalizada para detectar nmap -sS si las reglas por defecto no funcionan
+#    Por defecto, las reglas incluidas ya detectan escaneos, pero esta regla es un refuerzo.
+#    Descomenta las líneas siguientes si quieres añadirla.
+# echo "Añadiendo regla personalizada para nmap SYN scan..."
+# mkdir -p /etc/suricata/rules
+# cat << EOF > /etc/suricata/rules/local.rules
+# alert tcp \$EXTERNAL_NET any -> \$HOME_NET any (msg:"Posible escaneo NMAP SYN scan detectado"; flags:S; threshold: type both, track by_src, count 10, seconds 2; sid:1000001; rev:1;)
+# EOF
+# echo "include: /etc/suricata/rules/local.rules" >> /etc/suricata/suricata.yaml
 
 # 8. Asegurar que Suricata está corriendo
 systemctl enable suricata
