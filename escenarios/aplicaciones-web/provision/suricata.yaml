@@ -1,7 +1,6 @@
 %YAML 1.1
 ---
 
-# Configuración de Suricata con las interfaces de red y los puertos 
 vars:
   address-groups:
     HOME_NET: "[192.168.30.0/24]"
@@ -27,19 +26,14 @@ vars:
     DNP3_PORTS: 20000
     MODBUS_PORTS: 502
 
-  # Filtro por IP del atacante 
-  capture-filter: "ip host ATTACKER_IP_PLACEHOLDER"
-
-# Configuración de la interfaz de red
 af-packet:
-  - interface: eth1   # Se ajustará automáticamente por el script de configuracion de la maquina vulnerable
+  - interface: eth1
     cluster-id: 99
     cluster-type: cluster_flow
     defrag: yes
     use-mmap: yes
     tpacket-v3: yes
 
-# Deshabilito protocolos industriales no necesarios para evitar errores, ya que no se usaran en nuestros laboratorios
 app-layer:
   protocols:
     dnp3:
@@ -49,7 +43,9 @@ app-layer:
       enabled: no
       detection-enabled: no
 
-# Configuración de logs, integracion para wazuh
+ # Filtro por IP del atacante 
+capture-filter: "ip host ATTACKER_IP_PLACEHOLDER"
+
 outputs:
   - eve-log:
       enabled: yes
@@ -64,3 +60,8 @@ outputs:
         - smtp
         - ssh
         - flow
+
+# Ruta para las reglas personalizadas (Nmap para los laboratorios)
+default-rule-path: /etc/suricata/rules
+rule-files:
+  - local.rules
