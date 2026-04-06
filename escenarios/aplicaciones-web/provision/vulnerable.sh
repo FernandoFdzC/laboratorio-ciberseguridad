@@ -42,7 +42,7 @@ if ! systemctl is-active --quiet wazuh-agent; then
     wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.4-1_amd64.deb
 
     # Instalar el paquete .deb
-    sudo WAZUH_MANAGER="$WAZUH_MANAGER_IP" WAZUH_AGENT_NAME="vulnerable" dpkg -i ./wazuh-agent_4.7.4-1_amd64.deb
+    sudo WAZUH_MANAGER="$WAZUH_MANAGER_IP" WAZUH_AGENT_NAME="agente_web" dpkg -i ./wazuh-agent_4.7.4-1_amd64.deb
 
     # Habilitar e iniciar el agente
     systemctl daemon-reload
