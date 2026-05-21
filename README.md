@@ -28,7 +28,7 @@ El laboratorio se compone de una **infraestructura base común** (máquina ataca
 git clone https://github.com/tu-usuario/laboratorio-ciberseguridad.git
 cd laboratorio-ciberseguridad 
 ```
-2. **Levanta la infraestructura base (atacante + SIEM)**  
+### 2. **Levanta la infraestructura base (atacante + SIEM)**  
 
 La base es común para todos los escenarios. La primera vez tardará varios minutos (descarga de cajas, instalación de Wazuh…).
 
@@ -42,10 +42,10 @@ Al finalizar verás en pantalla la contraseña de administrador del dashboard de
 vagrant ssh wazuh
 sudo tar -O -xf wazuh-install-files.tar wazuh-install-files/wazuh-passwords.txt
 ```
-3. Elige un escenario vulnerable y levántalo
+### 3. Elige un escenario vulnerable y levántalo
 Cada escenario está en la carpeta escenarios/. Puedes tener varios escenarios levantados a la vez, pero requieren más recursos.
 
-🧪 Escenario 1 – Aplicaciones web (DVWA + Juice Shop)
+## 🧪 Escenario 1 – Aplicaciones web (DVWA + Juice Shop)
 ```bash
 cd escenarios/dvwa-juiceshop
 vagrant up
@@ -55,7 +55,7 @@ DVWA: http://192.168.30.30 (usuario admin, contraseña password)
 
 Juice Shop: http://192.168.30.30:3000
 
-🐧 Escenario 2 – ColddBox (máquina independiente)
+## 🐧 Escenario 2 – ColddBox (máquina independiente)
 ColddBox se distribuye como una caja Vagrant externa (.box) debido a su tamaño. Debes descargarla una sola vez desde los Releases del repositorio.
 
 Descarga el archivo colddbox-final.box desde la sección Releases de GitHub:
@@ -72,7 +72,7 @@ Levanta el escenario:
 cd escenarios/colddbox
 vagrant up
 ```
-🐍 Escenario 3 – Custom CTF (Path Traversal)
+## 🐍 Escenario 3 – Custom CTF (Path Traversal)
 ```bash
 cd escenarios/custom-ctf
 vagrant up
@@ -82,7 +82,7 @@ La máquina ofrece un servidor web vulnerable en el puerto 8000. Para obtener la
 ```bash
 curl http://192.168.30.32:8000/..%2Fconfig.txt
 ```
-4. Accede al dashboard de Wazuh
+### 4. Accede al dashboard de Wazuh
 Abre tu navegador y visita https://192.168.30.20
 
 Acepta el certificado autofirmado (avanzado → continuar)
@@ -93,7 +93,7 @@ Contraseña: la que se mostró al final de la instalación de la base
 
 Desde el dashboard podrás ver todos los eventos de seguridad generados por Suricata y los agentes de Wazuh.
 
-🔍 Prueba básica de funcionamiento (desde el atacante)
+## 🔍 Prueba básica de funcionamiento (desde el atacante)
 Conéctate a la máquina atacante:
 
 ```bash
@@ -107,7 +107,7 @@ sudo netdiscover -i eth1 -r 192.168.30.0/24
 Nota sobre netdiscover: Para descubrir las IPs de la red, recuerda especificar la interfaz correcta (eth1), ya que la máquina atacante tiene dos interfaces de red.
 
 
-🧹 Limpieza y gestión del laboratorio
+## 🧹 Limpieza y gestión del laboratorio
 Apagar las máquinas limpiamente (sin perder datos):
 
 ```bash
@@ -125,8 +125,8 @@ Destruir toda la base (atacante y Wazuh):
 cd base
 vagrant destroy -f
 ```
-⚠️ Solución de problemas comunes (Troubleshooting)
-❌ El dashboard de Wazuh da error 500 o no carga
+## ⚠️ Solución de problemas comunes (Troubleshooting)
+### ❌ El dashboard de Wazuh da error 500 o no carga
 A veces el servicio wazuh-dashboard se queda colgado. Conéctate a la máquina Wazuh y reinicia los servicios:
 
 ```bash
@@ -136,7 +136,7 @@ sudo systemctl restart wazuh-indexer wazuh-manager wazuh-dashboard
 ```
 Espera 1 minuto y recarga la página.
 
-❌ La máquina Wazuh no arranca (timeout) después de una reinstalación
+### ❌ La máquina Wazuh no arranca (timeout) después de una reinstalación
 Esto suele deberse a la caché de la caja ubuntu/jammy64. Elimínala y vuelve a crearla:
 
 ```bash
@@ -145,7 +145,7 @@ vagrant destroy -f
 vagrant box remove ubuntu/jammy64
 vagrant up
 ```
-❌ Después de recrear un escenario, el agente aparece como Disconnected en Wazuh
+### ❌ Después de recrear un escenario, el agente aparece como Disconnected en Wazuh
 El agente antiguo sigue registrado en el manager. Elimínalo:
 
 ```bash
@@ -155,7 +155,7 @@ sudo /var/ossec/bin/manage_agents -l          # lista agentes, apunta el ID del 
 sudo /var/ossec/bin/manage_agents -r <ID>     # elimina el agente
 sudo systemctl restart wazuh-manager
 ```
-❌ Quieres reinstalar completamente el laboratorio desde cero
+### ❌ Quieres reinstalar completamente el laboratorio desde cero
 Destruye todas las máquinas (base y todos los escenarios que hayas levantado):
 
 ```bash
@@ -174,7 +174,7 @@ vagrant box remove colddbox
 ```
 Vuelve a empezar desde el paso 2 de instalación.
 
-📜 Notas adicionales
+## 📜 Notas adicionales
 Todos los scripts de aprovisionamiento son idempotentes: puedes ejecutar vagrant provision varias veces sin errores.
 
 Suricata está configurado con un filtro por IP del atacante (capture-filter: ip host 192.168.30.10) para reducir el ruido y el consumo de recursos.
@@ -183,5 +183,5 @@ Las reglas de iptables en Wazuh bloquean el acceso del atacante al dashboard, si
 
 El dashboard de Wazuh es accesible desde tu ordenador anfitrión gracias a la red host-only que crea Vagrant (aparecerá una interfaz virtual con IP en el rango 192.168.30.0/24).
 
-🤝 Contribuciones
+## 🤝 Contribuciones
 Si encuentras algún error o deseas mejorar el laboratorio, eres bienvenido a abrir un issue o enviar un pull request. Este proyecto es open source y está pensado para la comunidad educativa.
