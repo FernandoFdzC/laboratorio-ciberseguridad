@@ -14,13 +14,6 @@ else
 
     # Extraer contraseñas de acceso al dashboard
     tar -xOf wazuh-install-files.tar wazuh-install-files/wazuh-passwords.txt > /home/vagrant/wazuh-passwords.txt
-
-    echo "======================================================="
-    echo "Instalación de Wazuh completada."
-    echo "Dashboard: https://192.168.30.20"
-    echo "Credenciales:"
-    cat /home/vagrant/wazuh-passwords.txt
-    echo "======================================================="
 fi
 
 # Bloquear acceso desde la máquina atacante (IP fija)
@@ -44,3 +37,26 @@ if ! iptables -C INPUT -s $ATTACKER_IP -j DROP 2>/dev/null; then
 else
     echo "Regla de bloqueo ya existente. Omitiendo."
 fi
+
+# --- Copiar reglas personalizadas (local_rules.xml) ---
+echo "Copiando reglas personalizadas de Wazuh (local_rules.xml)..."
+
+if [ -f /vagrant/provision/local_rules.xml ]; then
+    cp /vagrant/provision/local_rules.xml /var/ossec/etc/rules/local_rules.xml
+    chown root:wazuh /var/ossec/etc/rules/local_rules.xml
+    chmod 660 /var/ossec/etc/rules/local_rules.xml
+    systemctl restart wazuh-manager
+    echo "Reglas personalizadas instaladas correctamente."
+else
+    echo "ADVERTENCIA: No se encontró /vagrant/provision/local_rules.xml. Las reglas personalizadas no se aplicarán."
+fi
+
+
+echo "======================================================="
+    echo "Instalación de Wazuh completada."
+    echo "Dashboard: https://192.168.30.20"
+    echo "Credenciales:"
+    cat /home/vagrant/wazuh-passwords.txt
+    echo "======================================================="
+
+echo "La base del laboratorio se ha instalado con éxito"

@@ -1,11 +1,12 @@
 %YAML 1.1
 ---
+
 vars:
   address-groups:
     HOME_NET: "[192.168.30.0/24]"
     EXTERNAL_NET: "!$HOME_NET"
-  capture-filter: "ip host ATTACKER_IP_PLACEHOLDER"
 
+# Configuración de la interfaz (sin capture-filter, se aplicará después)
 af-packet:
   - interface: eth1
     cluster-id: 99
@@ -13,6 +14,8 @@ af-packet:
     defrag: yes
     use-mmap: yes
     tpacket-v3: yes
+
+# No se soporta 'capture-filter' en esta versión, lo eliminamos.
 
 app-layer:
   protocols:
@@ -36,6 +39,7 @@ outputs:
         - ssh
         - flow
 
+# Ruta para reglas personalizadas
 default-rule-path: /etc/suricata/rules
 rule-files:
   - local.rules

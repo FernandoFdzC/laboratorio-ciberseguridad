@@ -8,10 +8,10 @@ echo "=== Configurando máquina vulnerable ==="
 echo "Wazuh manager: $WAZUH_MANAGER_IP"
 echo "Atacante: $ATTACKER_IP"
 
-# 1. Actualizar sistema solo si es necesario
+# 1. Actualizar sistema
 apt-get update -y
 
-# 2. Instalar Docker y Docker Compose 
+# 2. Instalar Docker y Docker Compose
 if ! command -v docker &> /dev/null; then
     echo "Instalando Docker..."
     apt-get install -y docker.io
@@ -28,28 +28,17 @@ else
     echo "Docker Compose ya instalado."
 fi
 
-# 3. Levantar contenedores 
+# 3. Levantar contenedores
 cp /vagrant/docker-compose.yml /home/vagrant/
 chown vagrant:vagrant /home/vagrant/docker-compose.yml
 cd /home/vagrant
 docker-compose up -d
 
-# 4. Instalar agente Wazuh (usando repositorio APT - Método Oficial)
+# 4. Instalar agente Wazuh (versión 4.7.4)
 if ! systemctl is-active --quiet wazuh-agent; then
-    echo "Instalando agente Wazuh desde repositorio APT..."
-    # Instalar dependencias necesarias
-    apt-get install -y gnupg apt-transport-https curl
-    # 1. Importar la clave GPG de Wazuh
-    curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | gpg --no-default-keyring --keyring gnupg-ring:/usr/share/keyrings/wazuh.gpg --import
-    chmod 644 /usr/share/keyrings/wazuh.gpg
-    # 2. Añadir el repositorio de Wazuh
-    echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list
-    # 3. Actualizar la lista de paquetes e instalar el agente
-    apt-get update
-    apt-get install -y wazuh-agent
-    # 4. Configurar la IP del Wazuh manager
-    sed -i "s/^MANAGER_IP=.*/MANAGER_IP=$WAZUH_MANAGER_IP/" /var/ossec/etc/ossec.conf
-    # 5. Habilitar e iniciar el agente
+    echo "Instalando agente Wazuh"
+    wget https://packages.wazuh.com/4.x/apt/pool/main/w/wazuh-agent/wazuh-agent_4.7.4-1_amd64.deb
+    sudo WAZUH_MANAGER="$WAZUH_MANAGER_IP" WAZUH_AGENT_NAME="agente_web" dpkg -i ./wazuh-agent_4.7.4-1_amd64.deb
     systemctl daemon-reload
     systemctl enable wazuh-agent
     systemctl start wazuh-agent
@@ -59,13 +48,16 @@ else
     systemctl restart wazuh-agent
 fi
 
-# 5. Instalar Suricata 
+# 5. Instalar Suricata
 if ! command -v suricata &> /dev/null; then
     echo "Instalando Suricata..."
     apt-get install -y software-properties-common
     add-apt-repository ppa:oisf/suricata-stable -y
     apt-get update -y
     apt-get install -y suricata
+    # Aumentar el límite de captura del cuerpo HTTP para detectar payloads
+    echo "libhtp.default-config.request-body-limit: 1mb" >> /etc/suricata/suricata.yaml
+    echo "libhtp.default-config.response-body-limit: 1mb" >> /etc/suricata/suricata.yaml
 else
     echo "Suricata ya instalado."
 fi
@@ -77,43 +69,50 @@ if [ -z "$INTERFACE" ]; then
 fi
 echo "Interfaz a monitorizar: $INTERFACE"
 
-# Copiar la configuración personalizada y ajustar parámetros
+# Copiar configuración personalizada
 cp /vagrant/provision/suricata.yaml /etc/suricata/suricata.yaml
 sed -i "s/^  - interface: .*/  - interface: $INTERFACE/" /etc/suricata/suricata.yaml
 sed -i "s/ATTACKER_IP_PLACEHOLDER/$ATTACKER_IP/" /etc/suricata/suricata.yaml
 
-# 7. (Opcional) Añadir una regla personalizada para detectar nmap -sS si las reglas por defecto no funcionan
-#    Por defecto, las reglas incluidas ya detectan escaneos, pero esta regla es un refuerzo.
-#    Descomenta las líneas siguientes si quieres añadirla.
-# echo "Añadiendo regla personalizada para nmap SYN scan..."
-# mkdir -p /etc/suricata/rules
-# cat << EOF > /etc/suricata/rules/local.rules
-# alert tcp \$EXTERNAL_NET any -> \$HOME_NET any (msg:"Posible escaneo NMAP SYN scan detectado"; flags:S; threshold: type both, track by_src, count 10, seconds 2; sid:1000001; rev:1;)
-# EOF
-# echo "include: /etc/suricata/rules/local.rules" >> /etc/suricata/suricata.yaml
+# 7. Crear regla personalizadas
+echo "Añadiendo reglas personalizadas..."
+mkdir -p /etc/suricata/rules
+cat > /etc/suricata/rules/local.rules << 'EOF'
 
-# 8. Asegurar que Suricata está corriendo
+# REGLA 100001: ESCANEO NMAP 
+alert tcp $HOME_NET any -> $HOME_NET any (msg:"Escaneo con NMAP detectado"; flags:S; threshold: type limit, track by_src, count 1, seconds 120; sid:100001; rev:6;)
+
+# REGLA 100002: FUERZA BRUTA
+alert http 192.168.30.10 any -> $HOME_NET any (msg:"Ataque de Fuerza Bruta en DVWA - Flag: MDk4NzY1NDMyMQ=="; flow:to_server,established; content:"POST"; http_method; content:"/vulnerabilities/brute/"; http_uri; threshold: type limit, track by_src, count 1, seconds 60; sid:100002; rev:7;)
+
+# REGLA 100003: SQL INJECTION 
+alert http 192.168.30.10 any -> $HOME_NET any (msg:"Intento de SQL Injection en Juice Shop (payload de prueba)"; flow:to_server,established; content:"rest/user/login"; http_uri; content:"' ."; http_client_body; sid:100003; rev:1;)
+
+# REGLA 100004: SUBIDA PHP MALICIOSO
+alert http 192.168.30.10 any -> $HOME_NET any (msg:"Intento de subida de PHP malicioso en DVWA - Flag: UGFxdWV0ZSBzb3NwZWNob3Nv"; flow:to_server,established; content:"POST"; http_method; content:"/vulnerabilities/upload/"; http_uri; content:"filename="; http_client_body; content:".php"; http_client_body; sid:100004; rev:4;)
+
+# REGLA 100005: ACCESO ADMIN (payload realista para Juice Shop)
+alert http 192.168.30.10 any -> $HOME_NET any (msg:"Acceso Administrador en Juice Shop - Flag: RnJ1dGVybyBNYWVzdHJvCg=="; flow:to_server,established; content:"rest/user/login"; http_uri; content:"' OR 1=1"; http_client_body; sid:100005; rev:4;)
+
+
+EOF
+
+# 8. Arrancar Suricata
 systemctl enable suricata
 systemctl restart suricata || echo "Error al iniciar Suricata, revisa los logs."
 
 # 9. Configurar agente Wazuh para leer logs de Suricata
 if ! grep -q "eve.json" /var/ossec/etc/ossec.conf; then
     echo "Configurando agente Wazuh para leer logs de Suricata..."
-    # Hacer una copia de seguridad
     cp /var/ossec/etc/ossec.conf /var/ossec/etc/ossec.conf.bak
-
-    # Insertar el bloque <localfile> antes de </ossec_config>
     sed -i '/<\/ossec_config>/i\
   <localfile>\
     <log_format>json</log_format>\
     <location>/var/log/suricata/eve.json</location>\
   </localfile>' /var/ossec/etc/ossec.conf
-
-    # Verificar que la inserción fue exitosa
     if grep -q "eve.json" /var/ossec/etc/ossec.conf; then
         echo "Configuración añadida correctamente."
         systemctl restart wazuh-agent
-        echo "Agente Wazuh reiniciado."
     else
         echo "ERROR: No se pudo añadir la configuración. Restaurando backup..."
         mv /var/ossec/etc/ossec.conf.bak /var/ossec/etc/ossec.conf
@@ -123,7 +122,7 @@ else
     echo "Log de Suricata ya configurado en Wazuh."
 fi
 
-echo "=== Configuración completada ==="
+echo "=== Configuración completada para Aplicaciones Web ==="
 docker ps
 systemctl status suricata --no-pager
 systemctl status wazuh-agent --no-pager

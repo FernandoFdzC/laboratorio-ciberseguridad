@@ -1,0 +1,17 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.define "customctf" do |customctf|
+    customctf.vm.box = "ubuntu/jammy64"
+    customctf.vm.network "private_network", ip: "192.168.30.32"
+    customctf.vm.hostname = "customctf"
+    customctf.vm.provider "virtualbox" do |vb|
+      vb.memory = 1024
+      vb.cpus = 1
+    end
+    customctf.vm.synced_folder ".", "/vagrant"
+    customctf.vm.provision "shell", path: "provision/Traversal.sh", privileged: true,
+      env: { "WAZUH_MANAGER_IP" => "192.168.30.20", "ATTACKER_IP" => "192.168.30.10" }
+  end
+end
